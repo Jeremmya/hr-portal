@@ -33,13 +33,28 @@ const users = [{ username: 'admin', password: '$2a$10$hashedpassword' }];
 
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
-    const user = users.find(u => u.username === username);
-    
-    if (user && await bcrypt.compare(password, user.password)) {
-        req.session.user = username;
-        return res.json({ success: true, message: "Login successful" });
+
+    try {
+        // Query the database for the user
+        const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+
+        if (result.rows.length === 0) {
+            return res.status(401).json({ success: false, message: "Invalid credentials" });
+        }
+
+        const user = result.rows[0];
+
+        // Compare password with hashed password in DB
+        if (await bcrypt.compare(password, user.password)) {
+            req.session.user = username;
+            return res.json({ success: true, redirect: "/job_add.html" });
+        } else {
+            return res.status(401).json({ success: false, message: "Invalid credentials" });
+        }
+    } catch (error) {
+        console.error("Login error:", error);
+        res.status(500).json({ success: false, message: "Server error" });
     }
-    res.status(401).json({ success: false, message: "Invalid credentials" });
 });
 
 // Job Entry API
