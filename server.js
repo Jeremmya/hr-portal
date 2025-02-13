@@ -57,6 +57,21 @@ app.post('/login', async (req, res) => {
     }
 });
 
+app.post('/add-job', async (req, res) => {
+    const { jobType, constructionName, jobDescription } = req.body;
+
+    try {
+        await pool.query(
+            'INSERT INTO jobs (job_type, construction_name, job_description) VALUES ($1, $2, $3)',
+            [jobType, constructionName, jobDescription]
+        );
+        res.json({ success: true, message: "Job added successfully" });
+    } catch (error) {
+        console.error("Database error:", error);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+});
+
 // Job Entry API
 app.post('/submit-job', async (req, res) => {
     const { jobType, constructionSite, jobTitle } = req.body;
